@@ -4,6 +4,7 @@ opencv_python==4.9.0.80
 opencv_python_headless==4.9.0.80
 Pillow==10.3.0
 torch==2.3.0
+torch-tb-profiler==0.4.3
 torchvision==0.18.0
 transformers==4.39.3
 easyocr==1.7.1

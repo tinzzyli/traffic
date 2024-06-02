@@ -1,5 +1,5 @@
 # This is a traffic pipeline project code.
-The correct code was stored in `/traffic`.
+The correct code was stored in `traffic`.
   
 Mainly including **VideoToFrame, ObjectDetection, LicenseRecognition, PersonRecognition, and FrameToVideo.**  
 
@@ -7,7 +7,7 @@ Mainly including **VideoToFrame, ObjectDetection, LicenseRecognition, PersonReco
 
 ## Traffic Monitoring Pipeline
 
-The modules are in `/traffic/module`:
+The modules are in `traffic/module`:
 
 - `VideoToFrame`: Extracts frames from video, and sends them to `ObjectDetection`.
 - `ObjectDetection`: Detects cars and persons, and sends them with boxes to `LicenseRecognition` and `PersonRecognition` respectively.
@@ -23,11 +23,19 @@ The modules are in `/traffic/module`:
 
 ## Quick Start
 
-Adjust configuration in `/traffic/module/configs.py`.
+Install the required libraries:
+
+``` bash
+$ pip3 install -r requirements.txt
+```
+
+Adjust configuration in `traffic/module/configs.py`.  
+
+Execute:
 
 ``` bash
 $ cd module
 $ python3 pipeline.py
 ```
 
-Then, the pipeline will read the videos from `/traffic/input_video`, process them, and save the processed videos in `/traffic/output_video`.
+Then, the pipeline will read the videos from `traffic/input_video`, process them, and save the processed videos in `traffic/output_video`.

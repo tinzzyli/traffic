@@ -39,3 +39,32 @@ $ python3 pipeline.py
 ```
 
 Then, the pipeline will read the videos from `traffic/input_video`, process them, and save the processed videos in `traffic/output_video`.
+
+## Docker
+
+### Search for the Docker image:
+
+``` bash
+$ docker search traffic_monitoring_pipeline
+```
+
+### Pull the image:
+
+``` bash
+$ docker pull lifang535/traffic_monitoring_pipeline_with_git_v3
+```
+
+### Create and run the container:
+
+``` bash
+$ docker run --gpus all -it --rm --name temp traffic_monitoring_pipeline_with_git_v3
+```
+
+### Execute the pipeline:
+
+All dependencies have been installed. Execute the following commands:
+
+``` bash
+$ cd module
+$ python3 pipeline.py
+```

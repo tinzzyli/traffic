@@ -20,6 +20,7 @@ class VideoToFrame(Process):
         
         self.input_video_dir = config['input_video_dir']
         self.video_number = config['video_number']
+        self.video_start_id = config['video_start_id']
         self.frame_interval = config['frame_interval']
         self.frame_size = config['frame_size']
         
@@ -36,7 +37,7 @@ class VideoToFrame(Process):
         input_video_files.sort(key=lambda x: int(x.split('.')[0]))
         print(f"[VideoToFrame] input_video_files: {input_video_files}")
         
-        for video_id in range(self.video_number):
+        for video_id in range(self.video_start_id, self.video_number + self.video_start_id):
             input_video_path = os.path.join(self.input_video_dir, f"{video_id % len(input_video_files)}.mp4")
             print(f"[VideoToFrame] input_video_path: {input_video_path}")
             

@@ -1,9 +1,11 @@
 config = {
-    'input_video_dir': '../input_video',
+    'input_video_dir': '../evaluation_input_video',
     
-    'output_video_dir': '../output_video',
+    'output_video_dir': '../evaluation_output_video',
     
-    'video_number': 17,
+    'video_number': 1,
+    
+    'video_start_id': 3,
     
     'frame_interval': 1, # ms
     

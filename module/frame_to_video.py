@@ -7,6 +7,8 @@ from queue import Empty
 from threading import Thread
 from multiprocessing import Process, Queue
 
+from matplotlib import pyplot as plt
+
 from configs import config
 from request import Request
 
@@ -31,6 +33,11 @@ class FrameToVideo(Process):
         # save the frames of each video
         self.video_dict = {}
         self.video_saved_set = set()
+        
+        # save the process time of each frame
+        self.process_time_dict = {} # add
+        self.car_number = {}
+        self.person_number = {}
 
         self.end_flag = False
 
@@ -136,6 +143,11 @@ class FrameToVideo(Process):
                 return
             if len(self.video_dict[video_id][frame_id]['person']) != person_number:
                 return
+            
+            if frame_id not in self.process_time_dict:
+                self.process_time_dict[frame_id] = time.time() - request.start_time # add，TODO: 考虑顺序
+                self.car_number[frame_id] = car_number
+                self.person_number[frame_id] = person_number
         
         if video_id not in self.video_saved_set:
             self.video_saved_set.add(video_id)
@@ -215,8 +227,9 @@ class FrameToVideo(Process):
                 if end_count == 2:
                     self.video_queue.put(None)
                     
-                    self._end()
+                    # self._end() remove
                     break
+                continue # add
     
     def video_get(self):
         while not self.end_flag:
@@ -228,6 +241,50 @@ class FrameToVideo(Process):
             if video is None:
                 self._end()
                 break
+            
+    def draw_latency(self): # add，会调用两次
+        process_time_list = [self.process_time_dict[frame_id] for frame_id in range(len(self.process_time_dict))]
+        car_number_list = [self.car_number[frame_id] for frame_id in range(len(self.car_number))]
+        person_number_list = [self.person_number[frame_id] for frame_id in range(len(self.person_number))]
+        
+        print(f"[FrameToVideo] process_time_list = {process_time_list}")
+        print(f"[FrameToVideo] car_number_list = {car_number_list}")
+        print(f"[FrameToVideo] person_number_list = {person_number_list}")
+        
+        # 创建一个包含 3 个子图的图形
+        fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+
+        # 绘制第一个折线图
+        axs[0].plot(process_time_list, label='Process Time')
+        axs[0].set_title('Process Time Over Frames')
+        axs[0].set_xlabel('Frame')
+        axs[0].set_ylabel('Process Time')
+        axs[0].legend()
+
+        # 绘制第二个折线图
+        axs[1].plot(car_number_list, label='Car Number', color='orange')
+        axs[1].set_title('Car Number Over Frames')
+        axs[1].set_xlabel('Frame')
+        axs[1].set_ylabel('Car Number')
+        axs[1].legend()
+
+        # 绘制第三个折线图
+        axs[2].plot(person_number_list, label='Person Number', color='green')
+        axs[2].set_title('Person Number Over Frames')
+        axs[2].set_xlabel('Frame')
+        axs[2].set_ylabel('Person Number')
+        axs[2].legend()
+
+        # 调整子图之间的间距
+        plt.tight_layout()
+
+        # 保存图形为 PDF 文件
+        plt.savefig('../latency/3.png')
+    
+        # plt.plot(range(len(process_time_list)), process_time_list)
+        # plt.savefig('../latency/2.pdf')
 
     def _end(self):
+        self.draw_latency() # add
+        
         self.end_flag = True

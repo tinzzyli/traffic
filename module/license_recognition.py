@@ -68,7 +68,12 @@ class LicenseRecognition(Process):
             inputs = frame_array[y1:y2, x1:x2]
 
             with torch.no_grad():
-                outputs = self.model.readtext(inputs)
+                try: # add
+                    outputs = self.model.readtext(inputs)
+                except Exception as e:
+                    print(f"[LicenseRecognition] Error: {e}")
+                    print(f"[LicenseRecognition] inputs: {inputs.shape}")
+                    outputs = []
                 
             results = outputs
             

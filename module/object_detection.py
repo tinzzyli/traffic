@@ -70,12 +70,20 @@ class ObjectDetection(Process):
         
         frame_array = cv2.cvtColor(frame_array, cv2.COLOR_BGR2RGB)
         
-        inputs = self.image_processor(images=[frame_array], return_tensors="pt").to(self.device)
+        # inputs = self.image_processor(images=[frame_array], return_tensors="pt").to(self.device)
+        inputs = {
+            'pixel_values': (torch.from_numpy(frame_array.transpose(2, 0, 1)).unsqueeze(0).float() / 255.0).to(self.device)
+        }
         
         with torch.no_grad():
-            outputs = self.model(**inputs)
+            # outputs = self.model(**inputs)
+            outputs = self.model(inputs['pixel_values'])
 
         results = self.image_processor.post_process_object_detection(outputs, threshold=0.9)
+        
+        if request.frame_id % 10 == 0:
+            print(f"[ObjectDetection] frame_array.shape = {frame_array.shape}, inputs['pixel_values'].shape = {inputs['pixel_values'].shape}")
+            print(f"[ObjectDetection] video_id: {request.video_id}, frame_id: {request.frame_id}, len(results[0]['labels']) = {len(results[0]['labels'])}")
         
         # print(f"[ObjectDetection] Inference time: {round(time.time() - start_time, 4)}")
         

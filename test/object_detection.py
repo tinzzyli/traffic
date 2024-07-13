@@ -107,6 +107,7 @@ def calculate(batch_sizes, test_num_per_bs):
             # print results
             # target_sizes = torch.tensor([image.size[::-1] for image in images])
             target_sizes = torch.tensor([image.size[::-1] for _ in range(batch_size)])
+            print(f"image.size = {image.size}, target_sizes = {target_sizes}")
             # target_sizes = torch.tensor([(height, width) for _ in range(batch_size)])
 
             results = image_processor.post_process_object_detection(outputs, threshold=0.9, target_sizes=target_sizes)

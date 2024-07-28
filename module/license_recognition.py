@@ -24,6 +24,8 @@ class LicenseRecognition(Process):
         self.device = torch.device(config['license_recognition']['device'])
         self.model_path = config['license_recognition']['easyocr_model_path']
         
+        self.monitor_interval = config['monitor_interval']
+        
         self.model = None
         
         self.end_flag = False

@@ -24,6 +24,8 @@ class VideoToFrame(Process):
         self.frame_interval = config['frame_interval']
         self.frame_size = config['frame_size']
         
+        self.input_image_dir = config['input_image_dir']
+        
         # to object_detection module
         self.frame_queue = frame_queue
         
@@ -32,6 +34,50 @@ class VideoToFrame(Process):
     def run(self):
         print(f"[VideoToFrame] Start!")
         
+        self._read_image()
+        
+        self._end()
+        
+    def _read_image(self):
+        input_image_files = os.listdir(self.input_image_dir)
+        # sort by image name
+        input_image_files.sort(key=lambda x: int(x.split('.')[0]))
+        
+        image_files = sorted([f for f in os.listdir(self.input_image_dir) if f.endswith('.jpg')])
+        
+        video_id = 0
+        frame_id = 0
+        total_frames = len(image_files)
+        video_fps = 30
+        
+        adjust_frame_interval = time.time()
+
+        for image_name in image_files:
+            image_path = os.path.join(self.input_image_dir, image_name)
+
+            # 读取图片
+            image = cv2.imread(image_path)
+            
+            image_array = np.array(image)
+            
+            request = Request(
+                video_id=video_id,
+                frame_id=frame_id,
+                frame_number=total_frames,
+                
+                video_fps=video_fps,
+                data=image_array,
+                start_time=time.time(),
+            )
+            frame_id += 1
+            
+            self.frame_queue.put(request)
+            
+            time.sleep(max(0, self.frame_interval / 1000 - (time.time() - adjust_frame_interval)))
+            adjust_frame_interval = time.time()
+            
+        
+    def _read_video(self):
         input_video_files = os.listdir(self.input_video_dir)
         # sort by video name
         input_video_files.sort(key=lambda x: int(x.split('.')[0]))
@@ -45,6 +91,8 @@ class VideoToFrame(Process):
             video_fps = int(cap.get(5))
             
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            
+            print(f"[VideoToFrame] video_id: {video_id}, total_frames: {total_frames}, video_fps: {video_fps}")
             
             frame_id = 0
             
@@ -74,8 +122,6 @@ class VideoToFrame(Process):
                 adjust_frame_interval = time.time()
                 
             cap.release()
-        
-        self._end()
         
     def _end(self):
         self.frame_queue.put(None)

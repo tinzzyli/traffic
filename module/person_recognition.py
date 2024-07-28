@@ -28,6 +28,8 @@ class PersonRecognition(Process):
         self.device = torch.device(config['person_recognition']['device'])
         self.model_path = config['person_recognition']['face_recognition_model_path']
         
+        self.monitor_interval = config['monitor_interval']
+        
         self.model = None
         self.known_face_encodings = None
         self.known_face_names = None

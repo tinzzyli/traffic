@@ -4,6 +4,7 @@ from transformers import YolosImageProcessor, YolosForObjectDetection
 from torchvision import transforms
 from PIL import Image
 import torch
+import cv2
 
 import time
 from pprint import pprint
@@ -28,10 +29,14 @@ channels = 3
 height = 720
 width = 1080
 
-frame_id = 1
+frame_id = 2
 image_path = f"data_after_attacking/{frame_id:06d}.jpg"
 # image_path = f"data/{frame_id:06d}.jpg" # 4 objects
 image = Image.open(image_path)
+
+# image_cv2 = cv2.imread(image_path)
+# image_cv2 = cv2.cvtColor(image_cv2, cv2.COLOR_BGR2RGB)
+
 # (height, width, channels) -> (channels, height, width)
 # image_array = np.array(image.resize((width, height))).transpose(2, 0, 1)
 # image_array = np.array(image, dtype=np.float32).transpose(2, 0, 1)
@@ -119,13 +124,13 @@ def calculate(batch_sizes, test_num_per_bs):
             results = image_processor.post_process_object_detection(outputs, threshold=0.9, target_sizes=target_sizes)
             
             for i, result in enumerate(results):
-                print(f"Result {i}: {len(result['labels'])} objects detected")
                 for score, label, box in zip(result["scores"], result["labels"], result["boxes"]):
                     box = [round(i, 2) for i in box.tolist()]
                     print(
                         f"Detected {model.config.id2label[label.item()]} with confidence "
                         f"{round(score.item(), 3)} at location {box}"
                     )
+                print(f"Result {i}: {len(result['labels'])} objects detected")
             
             end_time = time.time()
             

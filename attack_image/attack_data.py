@@ -37,7 +37,27 @@ yolo_image_processor = torch.load(image_processor_path, map_location=device)
 save_dir = f"data_after_attacking/"
 
 from PIL import Image
+import logging
 
+def create_logger(module, filename, level):
+    # Create a formatter for the logger, setting the format of the log with time, level, and message
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    
+    # Create a logger named 'logger_{module}'
+    logger = logging.getLogger(f'logger_{module}')
+    logger.setLevel(level)     # Set the log level for the logger
+    
+    # Create a file handler, setting the file to write the logs, level, and formatter
+    fh = logging.FileHandler(filename, mode='w')
+    fh.setLevel(level)         # Set the log level for the file handler
+    fh.setFormatter(formatter) # Set the formatter for the file handler
+    
+    # Add the file handler to the logger
+    logger.addHandler(fh)
+    
+    return logger
+
+logger = create_logger("attack_data", "attack_data.log", logging.INFO)
 
 def generate_mask(outputs,result, x_shape, y_shape):
 
@@ -76,40 +96,6 @@ def generate_mask(outputs,result, x_shape, y_shape):
     
     
     return mask
-
-def write_results(filename, results):
-    save_format = '{frame},{id},{x1},{y1},{w},{h},{s},-1,-1,-1\n'
-    with open(filename, 'w') as f:
-        for frame_id, tlwhs, track_ids, scores in results:
-            for tlwh, track_id, score in zip(tlwhs, track_ids, scores):
-                if track_id < 0:
-                    continue
-                x1, y1, w, h = tlwh
-                line = save_format.format(frame=frame_id, id=track_id, x1=round(x1, 1), y1=round(y1, 1), w=round(w, 1), h=round(h, 1), s=round(score, 2))
-                f.write(line)
-    logger.info('save results to {}'.format(filename))
-
-
-def write_results_no_score(filename, results):
-    save_format = '{frame},{id},{x1},{y1},{w},{h},-1,-1,-1,-1\n'
-    with open(filename, 'w') as f:
-        for frame_id, tlwhs, track_ids in results:
-            for tlwh, track_id in zip(tlwhs, track_ids):
-                if track_id < 0:
-                    continue
-                x1, y1, w, h = tlwh
-                line = save_format.format(frame=frame_id, id=track_id, x1=round(x1, 1), y1=round(y1, 1), w=round(w, 1), h=round(h, 1))
-                f.write(line)
-    logger.info('save results to {}'.format(filename))
-
-def xywh2xyxy(x):
-    # Convert nx4 boxes from [x, y, w, h] to [x1, y1, x2, y2] where xy1=top-left, xy2=bottom-right
-    y = x.clone() if isinstance(x, torch.Tensor) else np.copy(x)
-    y[:, 0] = x[:, 0] - x[:, 2] / 2  # top left x
-    y[:, 1] = x[:, 1] - x[:, 3] / 2  # top left y
-    y[:, 2] = x[:, 0] + x[:, 2] / 2  # bottom right x
-    y[:, 3] = x[:, 1] + x[:, 3] / 2  # bottom right y
-    return y
 
 def run_attack(outputs,result,bx, strategy, max_tracker_num, mask):
 
@@ -158,7 +144,7 @@ def run_attack(outputs,result,bx, strategy, max_tracker_num, mask):
     
     bx.grad = bx.grad / (torch.norm(bx.grad,p=2) + 1e-20)
     bx.data = -3.5 * mask * bx.grad+ bx.data
-    count = (scores > 0.95).sum()
+    count = (scores > 0.9).sum()
     print('loss',loss.item(),'loss_2',loss2.item(),'loss_3',loss3.item(),'count:',count.item())
     return bx
 
@@ -249,18 +235,27 @@ def attack(
         print(added_imgs.shape)
         added_blob = torch.clamp(added_imgs*255,0,255).squeeze().permute(1, 2, 0).detach().cpu().numpy()
         added_blob = added_blob[..., ::-1]
-        print(f"========== added_blob.shape: {added_blob.shape} ==========")
-        print(added_blob)
+        # print(f"========== added_blob.shape: {added_blob.shape} ==========")
+        # print(added_blob)
+        print(f"max: {added_blob.max()}, min: {added_blob.min()}")
+        added_blob = np.round(added_blob).astype(np.uint8)
+        # print(f"========== added_blob.shape: {added_blob.shape} ==========")
+        # print(added_blob)
+        
         # added_blob = (added_imgs[0] * 255).permute(1, 2, 0).detach().cpu().numpy()
         # print(f"========== added_blob.shape: {added_blob.shape} ==========")
         # time.sleep(100)
         
-        # print(f"========== added_imgs: {added_imgs.shape} ==========")
-        # print(added_imgs)
-        added_imgs_np = (added_imgs * 255).squeeze(0).permute(1, 2, 0).detach().cpu().numpy()
-        # added_imgs_np = (added_imgs).squeeze(0).permute(1, 2, 0).detach().cpu().numpy()
-        added_imgs_np = cv2.cvtColor(added_imgs_np, cv2.COLOR_RGB2BGR)
-        added_blob = added_imgs_np
+        # # print(f"========== added_imgs: {added_imgs.shape} ==========")
+        # # print(added_imgs)
+        # added_imgs_np = (added_imgs * 255).squeeze(0).permute(1, 2, 0).detach().cpu().numpy()
+        # # added_imgs_np = (added_imgs).squeeze(0).permute(1, 2, 0).detach().cpu().numpy()
+        # print(f"========== added_imgs_np.shape: {added_imgs_np.shape} ==========")
+        # print(added_imgs_np)
+        # added_imgs_np = cv2.cvtColor(added_imgs_np, cv2.COLOR_RGB2BGR)
+        # added_blob = added_imgs_np # .astype(np.uint8)
+        # print(f"========== added_blob.shape: {added_blob.shape} ==========")
+        # print(added_blob)
         
         # cv2.imwrite(f"{save_dir}/{0:06d}.jpg", added_imgs_np)
         # from PIL import Image
@@ -312,10 +307,11 @@ def attack(
         # print(f"len(result['labels']): {len(result['labels'])}")
         # time.sleep(100)
         
-        
+        # frame_id = 0 # TODO
         save_path = f"{save_dir}/{frame_id:06d}.jpg"
         print(f"========== save_path: {save_path} ==========")
         cv2.imwrite(save_path, added_blob)
+        
         # Image.fromarray(added_blob).save(save_path)
         
         test_img = Image.open(save_path)
@@ -342,12 +338,16 @@ def attack(
         process_yolo_outputs_float = yolo_image_processor.post_process_object_detection(yolo_outputs_float, threshold=0.9, target_sizes=target_sizes)
         result_float = process_yolo_outputs_float[0]
         
-        added_imgs_int = (added_imgs * 255).to(torch.uint8).float() / 255.0
+        added_imgs_int = torch.round((added_imgs * 255)).to(torch.uint8) # .float() / 255.0
+        # print(f"========== added_imgs_int.shape: {added_imgs_int.shape} ==========")
+        # print(added_imgs_int)
+        added_imgs_int = (added_imgs_int.float() / 255.0)
         yolo_outputs_int = yolo_model(added_imgs_int)
         process_yolo_outputs_int = yolo_image_processor.post_process_object_detection(yolo_outputs_int, threshold=0.9, target_sizes=target_sizes)
         result_int = process_yolo_outputs_int[0]
         
-        print(f"The number of detected objects: {len(result_original['labels'])} → {len(result_read['labels'])} (if float: {len(result_float['labels'])}, if int: {len(result_int['labels'])})")
+        print(f"[Frame {frame_id}] The number of detected objects: {len(result_original['labels'])} → {len(result_read['labels'])} (if float: {len(result_float['labels'])}, if int: {len(result_int['labels'])})")
+        logger.info(f"[Frame {frame_id}] The number of detected objects: {len(result_original['labels'])} → {len(result_read['labels'])} (if float: {len(result_float['labels'])}, if int: {len(result_int['labels'])})")
         # for score, label, box in zip(result["scores"], result["labels"], result["boxes"]):
         #     box = [round(i, 2) for i in box.tolist()]
         #     print(

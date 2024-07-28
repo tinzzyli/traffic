@@ -38,6 +38,8 @@ class FrameToVideo(Process):
         self.process_time_dict = {} # add
         self.car_number = {}
         self.person_number = {}
+        
+        self.latency_path = config['latency_path']
 
         self.end_flag = False
 
@@ -279,7 +281,9 @@ class FrameToVideo(Process):
         plt.tight_layout()
 
         # 保存图形为 PDF 文件
-        plt.savefig('../latency/3.png')
+        # latency_path = '../picture/latency/before_attacking.png'
+        plt.savefig(self.latency_path)
+        print(f"[FrameToVideo] saved latency plot to {self.latency_path}")
     
         # plt.plot(range(len(process_time_list)), process_time_list)
         # plt.savefig('../latency/2.pdf')

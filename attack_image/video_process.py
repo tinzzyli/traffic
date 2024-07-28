@@ -5,8 +5,9 @@ import os
 # data_folder = 'data'
 # output_file = '0.mp4'
 data_folder = 'data_after_attacking'
-output_file = '3.mp4'
+output_file = '4.mp4'
 frame_size = (1088, 608)
+# frame_size = (640, 480)
 fps = 30  # 每秒帧数
 
 # 获取文件夹中所有文件，按文件名排序
@@ -15,6 +16,7 @@ files = sorted(os.listdir(data_folder))
 # 过滤符合条件的文件，并限制数量为400
 images = [file for file in files if file.endswith('.jpg') and file[:-4].isdigit() and int(file[:-4]) <= 400]
 images = images[:400]
+print(f"共找到 {len(images)} 张图片。")
 
 # 创建视频写入对象
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')

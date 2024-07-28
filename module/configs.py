@@ -1,3 +1,5 @@
+method = 'after_attacking' # 'before_attacking' or 'after_attacking'
+
 config = {
     'input_video_dir': '../evaluation_input_video',
     
@@ -5,9 +7,18 @@ config = {
     
     'video_number': 1,
     
-    'video_start_id': 3,
+    'video_start_id': 4,
+    
+    'input_image_dir': f'../input_image/{method}',
+    
+    'output_image_dir': f'../output_image/{method}',
     
     'frame_interval': 1, # ms
+    
+    'monitor_interval': 100, # ms
+    
+    'qsize_path': f'../picture/{method}/qsize.png',
+    'latency_path': f'../picture/{method}/latency.png',
     
     'frame_size': (224, 224, 3),
     

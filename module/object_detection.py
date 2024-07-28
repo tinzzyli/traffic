@@ -33,6 +33,8 @@ class ObjectDetection(Process):
         self.image_processor_path = config['object_detection']['yolo-tiny_image_processor_path']
         self.model_path = config['object_detection']['yolo-tiny_model_path']
         
+        # self.monitor_interval = config['monitor_interval'] # lifang535
+        
         self.image_processor = None
         self.model = None
         self.id2label = None
@@ -81,7 +83,7 @@ class ObjectDetection(Process):
 
         results = self.image_processor.post_process_object_detection(outputs, threshold=0.9)
         
-        if request.frame_id % 10 == 0:
+        if request.frame_id % 1 == 0:
             print(f"[ObjectDetection] frame_array.shape = {frame_array.shape}, inputs['pixel_values'].shape = {inputs['pixel_values'].shape}")
             print(f"[ObjectDetection] video_id: {request.video_id}, frame_id: {request.frame_id}, len(results[0]['labels']) = {len(results[0]['labels'])}")
         
@@ -127,6 +129,23 @@ class ObjectDetection(Process):
                 #     f"Detected {self.id2label[label.item()]} with confidence "
                 #     f"{round(score.item(), 3)} at location {box}"
                 # )
+                
+    # def _monitor(self): # lifang535
+    #     qsizes = []
+        
+    #     adjust_monitor_interval = time.time()
+    #     while not self.end_flag:
+    #         qsizes.append(self.frame_queue.qsize())
+            
+    #         time.sleep(max(0, self.monitor_interval / 1000 - (time.time() - adjust_monitor_interval)))
+    #         adjust_monitor_interval = time.time()
+            
+    #     # draw queue size
+        
+            
+            
+            
+            
             
     def _end(self):
         self.car_queue.put(None)

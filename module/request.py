@@ -16,7 +16,9 @@ class Request(object):
                  box: list = None,          # [x1, y1, x2, y2]
                  label: str = None,
                  signal: int = None,
-                 start_time: float = None) -> None:
+                 start_time: float = None,
+                 times: list = None,
+                 flops: list = None,) -> None:
         self.video_id = video_id
         self.frame_id = frame_id
         self.car_id = car_id
@@ -31,6 +33,8 @@ class Request(object):
         self.label = label
         self.signal = signal
         self.start_time = start_time
+        self.times = times
+        self.flops = flops
 
     def copy(self):
         return copy.deepcopy(self)

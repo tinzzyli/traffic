@@ -3,12 +3,15 @@ import cv2
 import time
 import torch
 
+import numpy as np
+
 from PIL import Image
 from queue import Empty
 from threading import Thread
 from multiprocessing import Process, Queue
 from concurrent.futures import ThreadPoolExecutor
 
+from thop import profile
 from configs import config
 from request import Request
 
@@ -68,6 +71,8 @@ class ObjectDetection(Process):
                 print(f"[ObjectDetection] video_id: {request.video_id}, frame_id: {request.frame_id}")
     
     def _infer(self, request):
+        flops, params = 0, 0
+        
         frame_array = request.data
         
         frame_array = cv2.cvtColor(frame_array, cv2.COLOR_BGR2RGB)
@@ -83,6 +88,11 @@ class ObjectDetection(Process):
 
         results = self.image_processor.post_process_object_detection(outputs, threshold=0.9)
         
+        try:
+            flops, params = profile(self.model, inputs=(inputs['pixel_values'], )) # add
+        except Exception as e:
+            pass
+        
         if request.frame_id % 1 == 0:
             print(f"[ObjectDetection] frame_array.shape = {frame_array.shape}, inputs['pixel_values'].shape = {inputs['pixel_values'].shape}")
             print(f"[ObjectDetection] video_id: {request.video_id}, frame_id: {request.frame_id}, len(results[0]['labels']) = {len(results[0]['labels'])}")
@@ -97,6 +107,8 @@ class ObjectDetection(Process):
             
             request.car_number = car_number
             request.person_number = person_number
+            request.times.append(time.time())
+            request.flops.append(flops)
             
             self.car_queue.put(request)
             self.person_queue.put(request)

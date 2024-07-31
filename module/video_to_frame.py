@@ -68,6 +68,8 @@ class VideoToFrame(Process):
                 video_fps=video_fps,
                 data=image_array,
                 start_time=time.time(),
+                times=[],
+                flops=[],
             )
             frame_id += 1
             

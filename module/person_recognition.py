@@ -8,8 +8,10 @@ import face_recognition
 import numpy as np
 
 from queue import Empty
+from torchvision.models import resnet50
 from multiprocessing import Process, Queue
 
+from thop import profile
 from configs import config
 from request import Request
 
@@ -41,6 +43,7 @@ class PersonRecognition(Process):
         
         # Read the face recognition model
         with open(self.model_path, "rb") as f:
+            self.model = resnet50().to("cuda:0") # add
             self.known_face_encodings = pickle.load(f)
             self.known_face_names = pickle.load(f)
         
@@ -59,6 +62,8 @@ class PersonRecognition(Process):
             # print(f"[PersonRecognition] video_id: {request.video_id}, frame_id: {request.frame_id}, person_id: {request.person_id}")
             
     def _infer(self, request):
+        flops, params = 0, 0
+        
         if request.box is not None:
             frame_array = request.data
             
@@ -78,6 +83,13 @@ class PersonRecognition(Process):
             inputs = frame_array[y1:y2, x1:x2]
             
             inputs = np.ascontiguousarray(inputs) # contiguous memory
+            
+            try:
+                inputs_array = np.array(inputs.copy().transpose(2, 0, 1), dtype=np.float32)
+                inputs_tensor = torch.from_numpy(inputs_array).unsqueeze(0).to("cuda:0")
+                flops, params = profile(self.model, inputs=(inputs_tensor, )) # add，好像有点问题，在下面的 try 语句会报错
+            except Exception as e:
+                pass
             
             # print(f"[PersonRecognition] inputs.shape = {inputs.shape}")
             
@@ -101,6 +113,9 @@ class PersonRecognition(Process):
                 label = name
                 
             request.label += f": {label}"
+        
+        request.times.append(time.time())
+        request.flops.append(flops)
         
         self.person_frame_queue.put(request)
         pass

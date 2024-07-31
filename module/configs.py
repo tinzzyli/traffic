@@ -19,6 +19,8 @@ config = {
     
     'qsize_path': f'../picture/{method}/qsize.png',
     'latency_path': f'../picture/{method}/latency.png',
+    'times_path': f'../picture/{method}/times.png',
+    'flops_path': f'../picture/{method}/flops.png',
     
     'frame_size': (224, 224, 3),
     

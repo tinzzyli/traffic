@@ -3,9 +3,12 @@ import cv2
 import time
 import torch
 
+import numpy as np
+
 from queue import Empty
 from multiprocessing import Process, Queue
 
+from thop import profile
 from configs import config
 from request import Request
 
@@ -51,6 +54,8 @@ class LicenseRecognition(Process):
             # print(f"[LicenseRecognition] video_id: {request.video_id}, frame_id: {request.frame_id}, car_id: {request.car_id}")
             
     def _infer(self, request):
+        flops, params = 0, 0
+        
         if request.box is not None:
             frame_array = request.data
             
@@ -68,6 +73,13 @@ class LicenseRecognition(Process):
             y2 = int(y2 * frame_size[0])
             
             inputs = frame_array[y1:y2, x1:x2]
+            
+            try:            
+                inputs_array = np.array(inputs.copy().transpose(2, 0, 1), dtype=np.float32)
+                inputs_tensor = torch.from_numpy(inputs_array).unsqueeze(0).to("cuda:0")
+                flops, params = profile(self.model.detector.module, inputs=(inputs_tensor, )) # add，好像有点问题，在下面的 try 语句会报错
+            except Exception as e:
+                pass
 
             with torch.no_grad():
                 try: # add
@@ -89,7 +101,10 @@ class LicenseRecognition(Process):
             request.label += f": {label}"
             
             # print(f"[LicenseRecognition] video_id: {request.video_id}, frame_id: {request.frame_id}, car_id: {request.car_id}, label: {request.label}")
-            
+        
+        request.times.append(time.time())
+        request.flops.append(flops)
+        
         self.car_frame_queue.put(request)
         pass
             

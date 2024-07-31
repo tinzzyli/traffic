@@ -36,10 +36,14 @@ class FrameToVideo(Process):
         
         # save the process time of each frame
         self.process_time_dict = {} # add
+        self.times = {} # add
+        self.flops = {} # add
         self.car_number = {}
         self.person_number = {}
         
         self.latency_path = config['latency_path']
+        self.times_path = config['times_path']
+        self.flops_path = config['flops_path']
 
         self.end_flag = False
 
@@ -91,6 +95,11 @@ class FrameToVideo(Process):
                 
                 self.video_dict[video_id][frame_id]['car'] = {}
                 self.video_dict[video_id][frame_id]['person'] = {}
+                self.video_dict[video_id][frame_id]['times'] = {'od': request.times[0] - request.start_time, 'lr': request.times[1] - request.start_time, 'pr': 0}
+                self.video_dict[video_id][frame_id]['flops'] = {'od': request.flops[0], 'lr': 0, 'pr': 0}
+            
+            self.video_dict[video_id][frame_id]['times']['lr'] = request.times[1] - request.start_time
+            self.video_dict[video_id][frame_id]['flops']['lr'] += request.flops[1]
             
             if request.box is not None:
                 self.video_dict[video_id][frame_id]['car'][car_id] = {'box': request.box, 'label': request.label}
@@ -123,6 +132,11 @@ class FrameToVideo(Process):
                 
                 self.video_dict[video_id][frame_id]['car'] = {}
                 self.video_dict[video_id][frame_id]['person'] = {}
+                self.video_dict[video_id][frame_id]['times'] = {'od': request.times[0] - request.start_time, 'lr': 0, 'pr': request.times[1] - request.start_time}
+                self.video_dict[video_id][frame_id]['flops'] = {'od': request.flops[0], 'lr': 0, 'pr': 0}
+                
+            self.video_dict[video_id][frame_id]['times']['pr'] = request.times[1] - request.start_time
+            self.video_dict[video_id][frame_id]['flops']['pr'] += request.flops[1]
             
             if request.box is not None:
                 self.video_dict[video_id][frame_id]['person'][person_id] = {'box': request.box, 'label': request.label}
@@ -210,7 +224,17 @@ class FrameToVideo(Process):
             
         video.release()
         
-        # print(f"[FrameToVideo] Save video: {video_id} done! video_dict.keys(): {self.video_dict.keys()}")
+        print(f"[FrameToVideo] Save video: {video_id} done! video_dict.keys(): {self.video_dict.keys()}")
+        self.times = { # add
+            'od': [self.video_dict[video_id][frame_id]['times']['od'] for frame_id in range(len(self.video_dict[video_id]))],
+            'lr': [self.video_dict[video_id][frame_id]['times']['lr'] for frame_id in range(len(self.video_dict[video_id]))],
+            'pr': [self.video_dict[video_id][frame_id]['times']['pr'] for frame_id in range(len(self.video_dict[video_id]))],
+        }
+        self.flops = { # add
+            'od': [self.video_dict[video_id][frame_id]['flops']['od'] for frame_id in range(len(self.video_dict[video_id]))],
+            'lr': [self.video_dict[video_id][frame_id]['flops']['lr'] for frame_id in range(len(self.video_dict[video_id]))],
+            'pr': [self.video_dict[video_id][frame_id]['flops']['pr'] for frame_id in range(len(self.video_dict[video_id]))],
+        }
         self.video_dict.pop(video_id)
         
         pass
@@ -284,11 +308,96 @@ class FrameToVideo(Process):
         # latency_path = '../picture/latency/before_attacking.png'
         plt.savefig(self.latency_path)
         print(f"[FrameToVideo] saved latency plot to {self.latency_path}")
+        
+        # 关闭图形
+        plt.close()
     
         # plt.plot(range(len(process_time_list)), process_time_list)
         # plt.savefig('../latency/2.pdf')
+    
+    def draw_times(self):
+        print(f"[FrameToVideo] self.times = {self.times}")
+        # 画在一张图上
+        # 创建一个图形
+        plt.figure(figsize=(10, 5))
+        
+        # 绘制折线图
+        plt.plot(self.times['od'], label='Object Detection')
+        plt.plot(self.times['lr'], label='License Recognition')
+        plt.plot(self.times['pr'], label='Person Recognition')
+        
+        # 添加标题和标签
+        plt.title('Inference Time Over Frames')
+        plt.xlabel('Frame')
+        plt.ylabel('Inference Time')
+        
+        # 添加图例
+        plt.legend()
+
+        # 保存图形为 PDF 文件
+        plt.savefig(self.times_path)
+        print(f"[FrameToVideo] saved times plot to {self.times_path}")
+        
+        # 关闭图形
+        plt.close()
+        
+    # def draw_flops(self):
+    #     print(f"[FrameToVideo] self.flops = {self.flops}")
+    #     # 画在一张图上
+    #     # 创建一个图形
+    #     plt.figure(figsize=(10, 5))
+        
+    #     # 绘制折线图
+    #     plt.plot(self.flops['od'], label='Object Detection')
+    #     plt.plot(self.flops['lr'], label='License Recognition')
+    #     plt.plot(self.flops['pr'], label='Person Recognition')
+        
+    #     # 添加标题和标签
+    #     plt.title('FLOPs Over Frames')
+    #     plt.xlabel('Frame')
+    #     plt.ylabel('FLOPs')
+        
+    #     # 添加图例
+    #     plt.legend()
+
+    #     # 保存图形为 PDF 文件
+    #     plt.savefig(self.flops_path)
+    #     print(f"[FrameToVideo] saved flops plot to {self.flops_path}")
+        
+    #     # 关闭图形
+    #     plt.close()
+        
+    def draw_flops(self):
+        fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+        
+        axs[0].plot(self.flops['od'], label='Object Detection')
+        axs[0].set_title('FLOPs Over Frames')
+        axs[0].set_xlabel('Frame')
+        axs[0].set_ylabel('FLOPs')
+        axs[0].legend()
+        
+        axs[1].plot(self.flops['lr'], label='License Recognition', color='orange')
+        axs[1].set_title('FLOPs Over Frames')
+        axs[1].set_xlabel('Frame')
+        axs[1].set_ylabel('FLOPs')
+        axs[1].legend()
+        
+        axs[2].plot(self.flops['pr'], label='Person Recognition', color='green')
+        axs[2].set_title('FLOPs Over Frames')
+        axs[2].set_xlabel('Frame')
+        axs[2].set_ylabel('FLOPs')
+        axs[2].legend()
+        
+        plt.tight_layout()
+        
+        plt.savefig(self.flops_path)
+        print(f"[FrameToVideo] saved flops plot to {self.flops_path}")
+        
+        plt.close()
 
     def _end(self):
-        self.draw_latency() # add
+        # self.draw_latency() # add
+        # self.draw_times() # add
+        self.draw_flops() # add
         
         self.end_flag = True

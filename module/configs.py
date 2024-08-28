@@ -1,4 +1,4 @@
-method = 'after_attacking' # 'before_attacking' or 'after_attacking'
+method = 'after_defending' # 'before_attacking' or 'after_attacking'
 
 config = {
     'input_video_dir': '../evaluation_input_video',

@@ -84,12 +84,12 @@ class PersonRecognition(Process):
             
             inputs = np.ascontiguousarray(inputs) # contiguous memory
             
-            try:
-                inputs_array = np.array(inputs.copy().transpose(2, 0, 1), dtype=np.float32)
-                inputs_tensor = torch.from_numpy(inputs_array).unsqueeze(0).to("cuda:0")
-                flops, params = profile(self.model, inputs=(inputs_tensor, )) # add，好像有点问题，在下面的 try 语句会报错
-            except Exception as e:
-                pass
+            # try: # To measure the FLOPs and parameters of the model
+            #     inputs_array = np.array(inputs.copy().transpose(2, 0, 1), dtype=np.float32)
+            #     inputs_tensor = torch.from_numpy(inputs_array).unsqueeze(0).to("cuda:0")
+            #     flops, params = profile(self.model, inputs=(inputs_tensor, )) # add，好像有点问题，在下面的 try 语句会报错
+            # except Exception as e:
+            #     pass
             
             # print(f"[PersonRecognition] inputs.shape = {inputs.shape}")
             

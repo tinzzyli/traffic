@@ -74,12 +74,12 @@ class LicenseRecognition(Process):
             
             inputs = frame_array[y1:y2, x1:x2]
             
-            try:            
-                inputs_array = np.array(inputs.copy().transpose(2, 0, 1), dtype=np.float32)
-                inputs_tensor = torch.from_numpy(inputs_array).unsqueeze(0).to("cuda:0")
-                flops, params = profile(self.model.detector.module, inputs=(inputs_tensor, )) # add，好像有点问题，在下面的 try 语句会报错
-            except Exception as e:
-                pass
+            # try: # To measure the FLOPs and parameters of the model        
+            #     inputs_array = np.array(inputs.copy().transpose(2, 0, 1), dtype=np.float32)
+            #     inputs_tensor = torch.from_numpy(inputs_array).unsqueeze(0).to("cuda:0")
+            #     flops, params = profile(self.model.detector.module, inputs=(inputs_tensor, )) # add，好像有点问题，在下面的 try 语句会报错
+            # except Exception as e:
+            #     pass
 
             with torch.no_grad():
                 try: # add

@@ -88,10 +88,10 @@ class ObjectDetection(Process):
 
         results = self.image_processor.post_process_object_detection(outputs, threshold=0.9)
         
-        try:
-            flops, params = profile(self.model, inputs=(inputs['pixel_values'], )) # add
-        except Exception as e:
-            pass
+        # try: # To measure the FLOPs and parameters of the model
+        #     flops, params = profile(self.model, inputs=(inputs['pixel_values'], )) # add
+        # except Exception as e:
+        #     pass
         
         if request.frame_id % 1 == 0:
             print(f"[ObjectDetection] frame_array.shape = {frame_array.shape}, inputs['pixel_values'].shape = {inputs['pixel_values'].shape}")
